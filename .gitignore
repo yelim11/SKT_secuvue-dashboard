@@ -2,7 +2,9 @@
 __pycache__/
 *.py[cod]
 .env
-data/secuvue.db
-data/secret.key
+*.db
+backend/secuvue.db
+agent/.env
+.DS_Store
 .vscode/
 .idea/
