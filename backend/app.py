@@ -18,7 +18,7 @@ OFFLINE_AFTER_SECONDS = int(os.getenv("OFFLINE_AFTER_SECONDS", "90"))
 CORS_ORIGINS = [x.strip() for x in os.getenv("CORS_ORIGINS", "*").split(",") if x.strip()]
 
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": CORS_ORIGINS}}, supports_credentials=False)
+CORS(app, resources={r"/*": {"origins": CORS_ORIGINS}}, supports_credentials=False)
 
 def utc_now():
     return datetime.now(timezone.utc)
