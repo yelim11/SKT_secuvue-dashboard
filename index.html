@@ -3,209 +3,189 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#0f172a">
-  <title>SecuView | Security Monitoring Dashboard</title>
+  <meta name="theme-color" content="#ffffff">
+  <title>SecuView | Threat Hunting</title>
   <link rel="stylesheet" href="./css/style.css">
 </head>
 <body>
-  <div class="app-shell">
-    <aside class="sidebar">
-      <div class="brand">
-        <div class="brand-mark">S</div>
-        <div class="brand-copy">
-          <strong>SecuView</strong>
-          <span>TEAM SOC</span>
-        </div>
+  <header class="global-header">
+    <div class="brand-area">
+      <button class="hamburger" aria-label="menu">☰</button>
+      <a class="logo" href="#" data-page-link="dashboard">secuvue<span>.</span></a>
+      <span class="module-chip">Threat Hunting</span>
+    </div>
+    <nav class="top-nav">
+      <button class="nav-link active" data-page-link="dashboard">Dashboard</button>
+      <button class="nav-link" data-page-link="agents">Agents</button>
+      <button class="nav-link" data-page-link="events">Events</button>
+    </nav>
+    <div class="status-area">
+      <button id="settingsBtn" class="round-btn" title="API settings">⚙</button>
+      <i id="apiLed" class="api-led"></i>
+    </div>
+  </header>
+
+  <div class="blue-banner">
+    <strong>SECUVIEW · SECURITY MONITORING PLATFORM</strong>
+    <span>Unified system status, logs and security events</span>
+  </div>
+
+  <main class="workspace">
+    <section class="toolbar">
+      <div class="tabs">
+        <button class="tab active" data-page-link="dashboard">Dashboard</button>
+        <button class="tab" data-page-link="events">Events</button>
+      </div>
+      <div class="toolbar-actions">
+        <label class="search-box"><span>⌕</span><input id="globalSearch" type="search" placeholder="Search"></label>
+        <select id="timeRange" class="control">
+          <option value="1">Last 1 hour</option>
+          <option value="6">Last 6 hours</option>
+          <option value="12" selected>Last 12 hours</option>
+          <option value="24">Last 24 hours</option>
+          <option value="168">Last 7 days</option>
+          <option value="720">Last 30 days</option>
+        </select>
+        <button id="refreshBtn" class="tool-btn">↻ Refresh</button>
+        <button id="exploreBtn" class="tool-btn">◉ Explore agent</button>
+        <button id="reportBtn" class="tool-btn">▤ Generate report</button>
+        <button id="addSystemBtn" class="primary-btn">+ Add system</button>
+      </div>
+    </section>
+
+    <section id="apiNotice" class="api-notice">
+      <div><strong>Backend API가 연결되지 않았습니다.</strong><span>Render API 주소를 등록하면 실제 시스템 정보가 표시됩니다.</span></div>
+      <button id="apiNoticeBtn" class="primary-btn">API 연결</button>
+    </section>
+
+    <section id="dashboardPage" class="page active">
+      <div class="metric-strip">
+        <article><span>Total alerts</span><strong id="totalAlerts">0</strong></article>
+        <article><span>Level 12 or above alerts</span><strong id="criticalAlerts" class="red">0</strong></article>
+        <article><span>Authentication failure</span><strong id="authFailures" class="red">0</strong></article>
+        <article><span>Authentication success</span><strong id="authSuccess">0</strong></article>
       </div>
 
-      <nav class="nav">
-        <button class="nav-item active" data-page="dashboard"><span>▦</span> Dashboard</button>
-        <button class="nav-item" data-page="systems"><span>◫</span> Systems</button>
-        <button class="nav-item" data-page="events"><span>⚑</span> Events</button>
-      </nav>
-
-      <div class="sidebar-status">
-        <i id="apiDot"></i>
-        <div>
-          <strong id="apiState">API 미설정</strong>
-          <span id="apiSmall">Backend URL을 연결하세요</span>
-        </div>
-      </div>
-    </aside>
-
-    <main class="main">
-      <header class="topbar">
-        <div>
-          <p class="eyebrow">WAZUH REPLACEMENT PROJECT</p>
-          <h1 id="pageTitle">Security Monitoring Dashboard</h1>
-        </div>
-        <div class="top-actions">
-          <button id="refreshBtn" class="btn secondary">새로고침</button>
-          <button id="settingsBtn" class="btn primary">API 설정</button>
-        </div>
-      </header>
-
-      <section id="connectionNotice" class="notice">
-        <div>
-          <strong>Backend API를 연결해주세요.</strong>
-          <span>Render 배포 주소를 등록하면 실제 팀 서버 상태와 로그가 표시됩니다.</span>
-        </div>
-        <button id="noticeSettings" class="btn primary">연결하기</button>
-      </section>
-
-      <section id="dashboardPage" class="page active">
-        <div class="summary-grid">
-          <article class="summary-card">
-            <span>전체 시스템</span>
-            <strong id="totalSystems">0</strong>
-            <small>Registered agents</small>
-          </article>
-          <article class="summary-card">
-            <span>정상</span>
-            <strong id="healthySystems">0</strong>
-            <small>Healthy</small>
-          </article>
-          <article class="summary-card">
-            <span>경고 / 위험</span>
-            <strong id="alertSystems">0</strong>
-            <small>Needs attention</small>
-          </article>
-          <article class="summary-card">
-            <span>오프라인</span>
-            <strong id="offlineSystems">0</strong>
-            <small>No recent heartbeat</small>
-          </article>
-        </div>
-
-        <div class="dashboard-grid">
-          <article class="panel span-2">
-            <div class="panel-head">
-              <div>
-                <span class="panel-label">SYSTEM HEALTH</span>
-                <h2>실시간 시스템 상태</h2>
-              </div>
-              <span id="lastUpdated" class="badge">-</span>
-            </div>
-            <div id="dashboardSystems" class="system-list empty-box">연결된 시스템이 없습니다.</div>
-          </article>
-
-          <article class="panel">
-            <div class="panel-head">
-              <div>
-                <span class="panel-label">EVENTS</span>
-                <h2>보안 이벤트</h2>
-              </div>
-            </div>
-            <div class="event-counts">
-              <div><i class="legend-dot info"></i><span>Info</span><strong id="infoEvents">0</strong></div>
-              <div><i class="legend-dot warning"></i><span>Warning</span><strong id="warningEvents">0</strong></div>
-              <div><i class="legend-dot critical"></i><span>Critical</span><strong id="criticalEvents">0</strong></div>
-            </div>
-          </article>
-
-          <article class="panel full">
-            <div class="panel-head">
-              <div>
-                <span class="panel-label">RECENT SECURITY EVENTS</span>
-                <h2>최근 보안 이벤트</h2>
-              </div>
-              <button class="text-btn" data-go="events">전체 보기</button>
-            </div>
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>시간</th>
-                    <th>시스템</th>
-                    <th>유형</th>
-                    <th>메시지</th>
-                    <th>위험도</th>
-                  </tr>
-                </thead>
-                <tbody id="recentEvents">
-                  <tr><td colspan="5" class="empty-cell">이벤트가 없습니다.</td></tr>
-                </tbody>
-              </table>
-            </div>
-          </article>
-        </div>
-      </section>
-
-      <section id="systemsPage" class="page">
-        <article class="panel full">
-          <div class="panel-head">
-            <div>
-              <span class="panel-label">REGISTERED AGENTS</span>
-              <h2>시스템 목록</h2>
-            </div>
-            <span id="systemCount" class="badge">0 systems</span>
-          </div>
-          <div id="systemsGrid" class="systems-grid empty-box">연결된 시스템이 없습니다.</div>
+      <div class="dashboard-grid">
+        <article class="card wide">
+          <div class="card-head"><div><span class="kicker">ALERTS LEVEL EVOLUTION</span><h2>시간대별 보안 이벤트</h2></div><span id="timeCaption" class="tiny-chip">Last 12 hours</span></div>
+          <div id="timelineChart" class="line-chart empty-chart">No data</div>
         </article>
-      </section>
 
-      <section id="eventsPage" class="page">
-        <article class="panel full">
-          <div class="panel-head">
-            <div>
-              <span class="panel-label">SECURITY LOG</span>
-              <h2>전체 이벤트</h2>
-            </div>
-            <select id="severityFilter">
-              <option value="all">전체 위험도</option>
-              <option value="info">Info</option>
-              <option value="warning">Warning</option>
-              <option value="critical">Critical</option>
-            </select>
+        <article class="card">
+          <div class="card-head"><div><span class="kicker">MITRE ATT&CK</span><h2>공격 유형</h2></div></div>
+          <div class="donut-layout">
+            <div id="attackDonut" class="donut"><div><strong id="attackCount">0</strong><span>events</span></div></div>
+            <div id="attackLegend" class="legend"></div>
           </div>
+        </article>
+
+        <article class="card">
+          <div class="card-head"><div><span class="kicker">TOP 5 AGENTS</span><h2>이벤트 발생 시스템</h2></div></div>
+          <div class="donut-layout">
+            <div id="agentDonut" class="donut"><div><strong id="agentAlertCount">0</strong><span>alerts</span></div></div>
+            <div id="agentLegend" class="legend"></div>
+          </div>
+        </article>
+
+        <article class="card wide">
+          <div class="card-head"><div><span class="kicker">ALERTS EVOLUTION · TOP AGENTS</span><h2>시스템별 이벤트 수</h2></div></div>
+          <div id="agentBars" class="bar-chart empty-chart">No data</div>
+        </article>
+
+        <article class="card full">
+          <div class="card-head"><div><span class="kicker">SECURITY ALERTS</span><h2>최근 보안 이벤트</h2></div><span id="lastUpdated" class="muted">-</span></div>
           <div class="table-wrap">
             <table>
-              <thead>
-                <tr>
-                  <th>시간</th>
-                  <th>시스템</th>
-                  <th>IP</th>
-                  <th>유형</th>
-                  <th>메시지</th>
-                  <th>위험도</th>
-                </tr>
-              </thead>
-              <tbody id="allEvents">
-                <tr><td colspan="6" class="empty-cell">이벤트가 없습니다.</td></tr>
-              </tbody>
+              <thead><tr><th>Time</th><th>Agent</th><th>OS</th><th>Technique(s)</th><th>Tactic(s)</th><th>Description</th><th>Level</th></tr></thead>
+              <tbody id="dashboardEvents"><tr><td colspan="7" class="empty-cell">No events</td></tr></tbody>
             </table>
           </div>
         </article>
-      </section>
-    </main>
-  </div>
+      </div>
+    </section>
+
+    <section id="agentsPage" class="page">
+      <div class="page-heading">
+        <div><span class="kicker">AGENT MANAGEMENT</span><h1>Agents</h1><p>팀 서버를 등록하고 실제 상태와 서비스 정보를 확인합니다.</p></div>
+        <button id="addSystemBtn2" class="primary-btn">+ Add system</button>
+      </div>
+      <div class="agent-summary">
+        <div><span>Total</span><strong id="agentTotal">0</strong></div>
+        <div><span>Active</span><strong id="agentActive">0</strong></div>
+        <div><span>Warning</span><strong id="agentWarning">0</strong></div>
+        <div><span>Disconnected</span><strong id="agentOffline">0</strong></div>
+      </div>
+      <div class="card full">
+        <div class="card-head"><div><span class="kicker">REGISTERED SYSTEMS</span><h2>시스템 목록</h2></div>
+          <select id="agentStatusFilter" class="control"><option value="all">All status</option><option value="healthy">Active</option><option value="warning">Warning</option><option value="critical">Critical</option><option value="offline">Disconnected</option></select>
+        </div>
+        <div id="agentsGrid" class="agents-grid empty-state">등록된 시스템이 없습니다.</div>
+      </div>
+    </section>
+
+    <section id="eventsPage" class="page">
+      <div class="page-heading"><div><span class="kicker">THREAT HUNTING</span><h1>Events</h1><p>수집된 로그를 검색하고 위험도·Agent·유형별로 필터링합니다.</p></div></div>
+      <div class="card full">
+        <div class="event-filters">
+          <input id="eventSearch" type="search" placeholder="메시지 / IP / Agent 검색">
+          <select id="severityFilter" class="control"><option value="all">All levels</option><option value="critical">Critical</option><option value="warning">Warning</option><option value="info">Info</option></select>
+          <select id="agentFilter" class="control"><option value="all">All agents</option></select>
+          <select id="typeFilter" class="control"><option value="all">All event types</option></select>
+          <span id="eventCount" class="muted">0 results</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Time</th><th>Agent</th><th>IP</th><th>Type</th><th>Source</th><th>Description</th><th>Level</th></tr></thead>
+            <tbody id="allEvents"><tr><td colspan="7" class="empty-cell">No events</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
 
   <div id="settingsModal" class="modal hidden">
     <div class="modal-card">
-      <div class="modal-head">
-        <div>
-          <span class="panel-label">CONNECTION</span>
-          <h2>Backend API 설정</h2>
-        </div>
-        <button id="closeSettings" class="icon-btn">×</button>
-      </div>
-
-      <p class="help">
-        Render에 배포된 SecuView API 주소를 입력하세요. 이 값은 현재 브라우저의
-        localStorage에만 저장됩니다.
-      </p>
-
+      <div class="modal-head"><div><span class="kicker">CONNECTION</span><h2>API 설정</h2></div><button class="close-btn" data-close="settingsModal">×</button></div>
+      <p>Render에 배포한 SecuView API 주소와 관리자 키를 입력합니다. 값은 현재 브라우저에만 저장됩니다.</p>
       <form id="settingsForm">
-        <label>
-          Render API URL
-          <input id="apiUrlInput" type="url" placeholder="https://secuvue-api.onrender.com" required>
-        </label>
+        <label>Backend API URL<input id="apiUrlInput" type="url" placeholder="https://secuvue-api.onrender.com" required></label>
+        <label>Admin Key<input id="adminKeyInput" type="password" placeholder="Render ADMIN_API_KEY"></label>
         <div id="settingsError" class="form-error hidden"></div>
-        <div class="modal-actions">
-          <button type="button" id="clearApiBtn" class="btn secondary">설정 삭제</button>
-          <button type="submit" class="btn primary">연결 테스트 후 저장</button>
-        </div>
+        <div class="modal-actions"><button type="button" id="clearSettingsBtn" class="secondary-btn">설정 삭제</button><button type="submit" class="primary-btn">연결 테스트 후 저장</button></div>
       </form>
+    </div>
+  </div>
+
+  <div id="registerModal" class="modal hidden">
+    <div class="modal-card">
+      <div class="modal-head"><div><span class="kicker">AGENT ENROLLMENT</span><h2>시스템 추가</h2></div><button class="close-btn" data-close="registerModal">×</button></div>
+      <p>IP와 Agent ID를 먼저 등록합니다. 대상 Linux 서버에서 Agent를 실행하면 실제 OS/CPU/RAM/Disk/로그가 채워집니다.</p>
+      <form id="registerForm">
+        <div class="form-grid">
+          <label>System name<input name="name" placeholder="DNS-Rocky" required></label>
+          <label>IP address<input name="ip" placeholder="192.168.16.117" required></label>
+          <label>Agent ID<input name="agent_id" placeholder="dns-rocky" required></label>
+          <label>OS (optional)<input name="os_name" placeholder="Rocky Linux"></label>
+        </div>
+        <div id="registerError" class="form-error hidden"></div>
+        <div class="modal-actions"><button type="button" class="secondary-btn" data-close="registerModal">취소</button><button type="submit" class="primary-btn">등록</button></div>
+      </form>
+    </div>
+  </div>
+
+  <div id="enrollModal" class="modal hidden">
+    <div class="modal-card large">
+      <div class="modal-head"><div><span class="kicker">INSTALL AGENT</span><h2 id="enrollTitle">Agent 연결</h2></div><button class="close-btn" data-close="enrollModal">×</button></div>
+      <p>아래 값을 대상 Linux 서버의 <code>/etc/secuvue-agent.env</code>에 넣고 Agent를 실행하세요.</p>
+      <div class="install-box"><pre id="enrollText"></pre><button id="copyEnrollBtn" class="secondary-btn">복사</button></div>
+    </div>
+  </div>
+
+  <div id="detailModal" class="modal hidden">
+    <div class="modal-card large">
+      <div class="modal-head"><div><span class="kicker">AGENT DETAILS</span><h2 id="detailTitle">System</h2></div><button class="close-btn" data-close="detailModal">×</button></div>
+      <div id="detailBody"></div>
     </div>
   </div>
 
