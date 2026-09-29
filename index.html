@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0f172a">
+  <title>SecuView | Security Monitoring Dashboard</title>
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">S</div>
+        <div class="brand-copy">
+          <strong>SecuView</strong>
+          <span>TEAM SOC</span>
+        </div>
+      </div>
+
+      <nav class="nav">
+        <button class="nav-item active" data-page="dashboard"><span>▦</span> Dashboard</button>
+        <button class="nav-item" data-page="systems"><span>◫</span> Systems</button>
+        <button class="nav-item" data-page="events"><span>⚑</span> Events</button>
+      </nav>
+
+      <div class="sidebar-status">
+        <i id="apiDot"></i>
+        <div>
+          <strong id="apiState">API 미설정</strong>
+          <span id="apiSmall">Backend URL을 연결하세요</span>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">WAZUH REPLACEMENT PROJECT</p>
+          <h1 id="pageTitle">Security Monitoring Dashboard</h1>
+        </div>
+        <div class="top-actions">
+          <button id="refreshBtn" class="btn secondary">새로고침</button>
+          <button id="settingsBtn" class="btn primary">API 설정</button>
+        </div>
+      </header>
+
+      <section id="connectionNotice" class="notice">
+        <div>
+          <strong>Backend API를 연결해주세요.</strong>
+          <span>Render 배포 주소를 등록하면 실제 팀 서버 상태와 로그가 표시됩니다.</span>
+        </div>
+        <button id="noticeSettings" class="btn primary">연결하기</button>
+      </section>
+
+      <section id="dashboardPage" class="page active">
+        <div class="summary-grid">
+          <article class="summary-card">
+            <span>전체 시스템</span>
+            <strong id="totalSystems">0</strong>
+            <small>Registered agents</small>
+          </article>
+          <article class="summary-card">
+            <span>정상</span>
+            <strong id="healthySystems">0</strong>
+            <small>Healthy</small>
+          </article>
+          <article class="summary-card">
+            <span>경고 / 위험</span>
+            <strong id="alertSystems">0</strong>
+            <small>Needs attention</small>
+          </article>
+          <article class="summary-card">
+            <span>오프라인</span>
+            <strong id="offlineSystems">0</strong>
+            <small>No recent heartbeat</small>
+          </article>
+        </div>
+
+        <div class="dashboard-grid">
+          <article class="panel span-2">
+            <div class="panel-head">
+              <div>
+                <span class="panel-label">SYSTEM HEALTH</span>
+                <h2>실시간 시스템 상태</h2>
+              </div>
+              <span id="lastUpdated" class="badge">-</span>
+            </div>
+            <div id="dashboardSystems" class="system-list empty-box">연결된 시스템이 없습니다.</div>
+          </article>
+
+          <article class="panel">
+            <div class="panel-head">
+              <div>
+                <span class="panel-label">EVENTS</span>
+                <h2>보안 이벤트</h2>
+              </div>
+            </div>
+            <div class="event-counts">
+              <div><i class="legend-dot info"></i><span>Info</span><strong id="infoEvents">0</strong></div>
+              <div><i class="legend-dot warning"></i><span>Warning</span><strong id="warningEvents">0</strong></div>
+              <div><i class="legend-dot critical"></i><span>Critical</span><strong id="criticalEvents">0</strong></div>
+            </div>
+          </article>
+
+          <article class="panel full">
+            <div class="panel-head">
+              <div>
+                <span class="panel-label">RECENT SECURITY EVENTS</span>
+                <h2>최근 보안 이벤트</h2>
+              </div>
+              <button class="text-btn" data-go="events">전체 보기</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>시간</th>
+                    <th>시스템</th>
+                    <th>유형</th>
+                    <th>메시지</th>
+                    <th>위험도</th>
+                  </tr>
+                </thead>
+                <tbody id="recentEvents">
+                  <tr><td colspan="5" class="empty-cell">이벤트가 없습니다.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="systemsPage" class="page">
+        <article class="panel full">
+          <div class="panel-head">
+            <div>
+              <span class="panel-label">REGISTERED AGENTS</span>
+              <h2>시스템 목록</h2>
+            </div>
+            <span id="systemCount" class="badge">0 systems</span>
+          </div>
+          <div id="systemsGrid" class="systems-grid empty-box">연결된 시스템이 없습니다.</div>
+        </article>
+      </section>
+
+      <section id="eventsPage" class="page">
+        <article class="panel full">
+          <div class="panel-head">
+            <div>
+              <span class="panel-label">SECURITY LOG</span>
+              <h2>전체 이벤트</h2>
+            </div>
+            <select id="severityFilter">
+              <option value="all">전체 위험도</option>
+              <option value="info">Info</option>
+              <option value="warning">Warning</option>
+              <option value="critical">Critical</option>
+            </select>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>시간</th>
+                  <th>시스템</th>
+                  <th>IP</th>
+                  <th>유형</th>
+                  <th>메시지</th>
+                  <th>위험도</th>
+                </tr>
+              </thead>
+              <tbody id="allEvents">
+                <tr><td colspan="6" class="empty-cell">이벤트가 없습니다.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <div id="settingsModal" class="modal hidden">
+    <div class="modal-card">
+      <div class="modal-head">
+        <div>
+          <span class="panel-label">CONNECTION</span>
+          <h2>Backend API 설정</h2>
+        </div>
+        <button id="closeSettings" class="icon-btn">×</button>
+      </div>
+
+      <p class="help">
+        Render에 배포된 SecuView API 주소를 입력하세요. 이 값은 현재 브라우저의
+        localStorage에만 저장됩니다.
+      </p>
+
+      <form id="settingsForm">
+        <label>
+          Render API URL
+          <input id="apiUrlInput" type="url" placeholder="https://secuvue-api.onrender.com" required>
+        </label>
+        <div id="settingsError" class="form-error hidden"></div>
+        <div class="modal-actions">
+          <button type="button" id="clearApiBtn" class="btn secondary">설정 삭제</button>
+          <button type="submit" class="btn primary">연결 테스트 후 저장</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="./js/app.js"></script>
+</body>
+</html>
