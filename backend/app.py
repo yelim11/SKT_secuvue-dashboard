@@ -105,7 +105,15 @@ def row_to_system(row):
 
 @app.get("/")
 def root():
-    return jsonify({"service": "secuvue-api", "ok": True, "health": "/health"})
+    return send_from_directory(str(PROJECT_DIR), "index.html")
+
+@app.get("/css/<path:filename>")
+def css_files(filename):
+    return send_from_directory(str(PROJECT_DIR / "css"), filename)
+
+@app.get("/js/<path:filename>")
+def js_files(filename):
+    return send_from_directory(str(PROJECT_DIR / "js"), filename)
 
 @app.get("/health")
 def health():
