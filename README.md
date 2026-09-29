@@ -1,156 +1,119 @@
 # SecuView Dashboard
 
-팀 과제용 **WAZUH 대체 보안 모니터링 웹 애플리케이션**입니다.
+팀 과제용 **WAZUH 스타일 보안 모니터링 웹 애플리케이션**입니다.  
+Wazuh의 대시보드 흐름을 참고했지만 브랜드와 코드는 SecuView 자체 구현입니다.
 
-이 저장소는 GitHub Pages 정적 프론트엔드와 Render API, 각 Linux 서버에 설치하는 Agent를 분리한 구조입니다.
+## 현재 기능
+
+- Wazuh 스타일 Dashboard / Agents / Events 화면
+- Total alerts / Critical / SSH 인증 성공·실패 요약
+- 시간대별 Alert 추이
+- 공격 유형(MITRE ATT&CK 형태) 분류
+- Top agents / 시스템별 이벤트 수
+- 최근 Security Alerts
+- 시간 범위 / 검색 / 위험도 / Agent / 이벤트 유형 필터
+- CSV Report 생성
+- 시스템 이름 + IP + Agent ID 등록
+- Agent 상세 화면: IP, OS, CPU, RAM, Disk, 서비스, Last seen, 최근 이벤트
+- Agent heartbeat가 90초 이상 없으면 Disconnected 처리
+- 실제 Linux Agent가 Render API로 시스템 상태와 로그 전송
+
+## 구조
 
 ```text
-Linux Server (DNS / Web-DB / Ubuntu / Rocky ...)
-        │
-        │ HTTPS POST (실제 CPU/RAM/Disk/로그)
-        ▼
-Render : backend/
+GitHub Pages (SecuView UI)
         │
         │ REST API
         ▼
-GitHub Pages : index.html + css/ + js/
+Render Flask API
+        ▲
+        │ HTTPS POST
+        │
+Linux Agent
+DNS / Web-DB / Ubuntu / Rocky ...
 ```
 
-## 왜 이 구조인가?
+> `192.168.x.x` 같은 사설 IP는 Render가 인터넷에서 직접 SSH 접속할 수 없습니다.
+> 그래서 웹에서 IP/Agent ID를 등록한 뒤 해당 서버의 Agent가 실제 정보를 Render로 전송합니다.
 
-팀 서버의 IP가 `192.168.x.x` 같은 사설 IP이면 인터넷의 Render 서버가 그 IP로 직접 SSH 접속할 수 없습니다.
+## 1. GitHub Pages
 
-그래서 각 서버에서 `agent/agent.py`를 실행해 **서버가 자신의 실제 상태와 로그를 Render로 보내는 방식**으로 구성합니다. GitHub Pages는 Render API에서 데이터를 읽어서 대시보드에 표시합니다.
-
----
-
-## 저장소 구조
+저장소의 `Settings → Pages`에서:
 
 ```text
-SKT_secuvue-dashboard/
-├─ index.html             # GitHub Pages
-├─ css/style.css
-├─ js/app.js
-├─ .nojekyll
-├─ backend/
-│  ├─ app.py              # Render API
-│  └─ requirements.txt
-├─ agent/
-│  ├─ agent.py            # 각 Linux 서버에서 실행
-│  ├─ config.example.env
-│  └─ secuvue-agent.service
-├─ render.yaml
-└─ README.md
+Source : Deploy from a branch
+Branch : main
+Folder : / (root)
 ```
 
----
-
-# 1. GitHub Pages 배포
-
-GitHub 저장소에서:
-
-1. `Settings`
-2. `Pages`
-3. `Build and deployment`
-4. Source → `Deploy from a branch`
-5. Branch → `main`
-6. Folder → `/ (root)`
-7. `Save`
-
-배포 주소는 보통:
+페이지:
 
 ```text
 https://yelim11.github.io/SKT_secuvue-dashboard/
 ```
 
-처음에는 Backend API가 설정되지 않았다는 안내가 정상적으로 표시됩니다.
+## 2. Render Backend
 
----
+`render.yaml`을 이용해 Blueprint로 배포합니다.
 
-# 2. Render Backend 배포
+필수 환경변수:
 
-이 저장소에는 `render.yaml`이 포함되어 있습니다.
+- `AGENT_API_KEY`: Linux Agent가 데이터를 전송할 때 사용하는 키
+- `ADMIN_API_KEY`: 웹에서 시스템을 등록할 때 사용하는 관리자 키
+- `CORS_ORIGINS=https://yelim11.github.io`
+- `OFFLINE_AFTER_SECONDS=90`
 
-Render에서:
-
-1. `New +`
-2. `Blueprint`
-3. GitHub의 `SKT_secuvue-dashboard` 저장소 연결
-4. Blueprint 적용
-5. `secuvue-api` 서비스 생성 확인
-
-`render.yaml` 기준:
+정상 확인:
 
 ```text
-Root Directory : backend
-Build Command  : pip install -r requirements.txt
-Start Command  : gunicorn app:app
-Health Check   : /health
+https://YOUR-SERVICE.onrender.com/health
 ```
 
-Render 환경변수에서 생성된 `AGENT_API_KEY` 값을 확인합니다.
+## 3. 웹에서 API 연결
 
-> 이 키는 GitHub에 올리지 말고 팀원에게 별도로 전달하세요.
-
-배포가 완료되면 예:
+SecuView 우측 상단 ⚙ 버튼:
 
 ```text
-https://secuvue-api.onrender.com
+Backend API URL : https://YOUR-SERVICE.onrender.com
+Admin Key       : Render의 ADMIN_API_KEY
 ```
 
-이 주소의 `/health`가 다음처럼 응답하면 정상입니다.
+`연결 테스트 후 저장`을 누릅니다.
 
-```json
-{"ok": true, "service": "secuvue-api"}
-```
+## 4. 시스템 등록
 
----
-
-# 3. GitHub Pages에서 Render 연결
-
-배포된 SecuView 페이지를 열고:
-
-`API 설정` → Render URL 입력 → `연결 테스트 후 저장`
-
-예:
+`+ Add system`에서 예:
 
 ```text
-https://secuvue-api.onrender.com
+System name : DNS-Rocky
+IP address  : 192.168.16.117
+Agent ID    : dns-rocky
+OS          : Rocky Linux
 ```
 
-브라우저 localStorage에만 저장되기 때문에 Render 주소를 소스코드에 하드코딩할 필요가 없습니다.
+등록 직후에는 **Disconnected**가 정상입니다.  
+대상 서버의 Agent가 heartbeat를 보내면 실제 시스템 정보로 갱신됩니다.
 
----
-
-# 4. Linux 서버에 Agent 설치
-
-예: DNS-Rocky.
-
-먼저 필요한 파일을 서버에 준비합니다.
+## 5. Linux Agent 설치
 
 ```bash
 sudo mkdir -p /opt/secuvue-agent
-sudo cp agent.py /opt/secuvue-agent/agent.py
+sudo cp agent/agent.py /opt/secuvue-agent/agent.py
 sudo chmod 755 /opt/secuvue-agent/agent.py
-```
-
-환경 설정:
-
-```bash
 sudo vi /etc/secuvue-agent.env
 ```
 
 예:
 
 ```text
-SECUVUE_API_URL=https://secuvue-api.onrender.com
-SECUVUE_API_KEY=Render에서_확인한_AGENT_API_KEY
+SECUVUE_API_URL=https://YOUR-SERVICE.onrender.com
+SECUVUE_API_KEY=Render의_AGENT_API_KEY
 SECUVUE_AGENT_ID=dns-rocky
 SECUVUE_AGENT_NAME=DNS-Rocky
 SECUVUE_INTERVAL=30
 ```
 
-먼저 한 번 테스트:
+1회 테스트:
 
 ```bash
 set -a
@@ -159,96 +122,44 @@ set +a
 sudo -E python3 /opt/secuvue-agent/agent.py --once
 ```
 
-정상이면:
-
-```text
-[OK] status -> DNS-Rocky / healthy
-```
-
-처럼 표시됩니다.
-
----
-
-# 5. Agent 자동 실행
-
-`agent/secuvue-agent.service`를 `/etc/systemd/system/`에 복사:
+자동 실행:
 
 ```bash
-sudo cp secuvue-agent.service /etc/systemd/system/
+sudo cp agent/secuvue-agent.service /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable --now secuvue-agent
 sudo systemctl status secuvue-agent
 ```
 
-Agent 상태 확인:
+## 실제 수집 정보
 
-```bash
-journalctl -u secuvue-agent -f
-```
-
----
-
-# 실제 수집 데이터
-
-Agent가 각 Linux 서버에서 실제로 수집합니다.
-
-- hostname
-- IP
-- OS
-- CPU 사용률
-- RAM 사용률
-- Disk 사용률
-- Uptime
-- SSH 상태
-- DNS(named/bind9) 상태
-- Apache/httpd/nginx 상태
-- MariaDB/MySQL 상태
-- Suricata/Snort 상태
-
-로그가 존재하고 읽을 수 있을 경우:
-
-- `/var/log/secure`
-- `/var/log/auth.log`
+- hostname / IP / OS
+- CPU / RAM / Disk / uptime
+- SSH
+- DNS(named/bind9)
+- Apache/httpd/nginx
+- MariaDB/MySQL
+- Suricata/Snort
+- journalctl
+- /var/log/secure
+- /var/log/auth.log
 - Apache/httpd access/error log
-- Suricata `fast.log`
-- `journalctl`
+- Suricata fast.log
 
----
+## 보안 이벤트 분류
 
-# 보안 이벤트 분류
-
-현재 Agent는 다음 이벤트를 자동 분류합니다.
-
-| 이벤트 | 위험도 |
+| 이벤트 | 표시 |
 |---|---|
-| SSH 로그인 성공 | Info |
-| SSH 로그인 실패 / Invalid user | Warning |
-| HTTP 404 | Warning |
+| SSH 로그인 성공 | Info / Valid Accounts |
+| SSH 로그인 실패 | Warning / Password Guessing |
+| HTTP 404 | Warning / Web Attack |
 | Access denied / blocked / drop | Warning |
 | 시스템 오류 | Warning |
-| Suricata/IDS Alert | Critical |
+| Suricata / IDS Alert | Critical |
 
----
+## 주의
 
-# Kali 테스트 예시
-
-팀 실습망에서 Kali로 서버에 잘못된 SSH 로그인을 발생시키거나 웹 경로를 요청하면 서버 로그에 기록됩니다.
-
-그 로그를 Agent가 읽어서:
-
-```text
-Linux Server → Render API → GitHub Pages
-```
-
-순서로 전달하고 SecuView의 `Events` 화면에서 확인할 수 있습니다.
-
----
-
-# 주의사항
-
-- `AGENT_API_KEY`는 GitHub에 커밋하지 않습니다.
-- 서버 비밀번호를 웹사이트에 저장하지 않습니다.
-- GitHub Pages에는 서버 접속 비밀번호나 API 쓰기 키가 포함되지 않습니다.
-- 현재 SQLite DB는 Render 인스턴스 파일시스템에 저장되므로 재배포/재시작 시 데이터가 초기화될 수 있습니다.
-  과제 최종 단계에서 영구 보존이 필요하면 PostgreSQL/Supabase로 교체할 수 있습니다.
-- 이 프로젝트는 수업용/실습용입니다.
+- `AGENT_API_KEY`, `ADMIN_API_KEY`는 GitHub에 커밋하지 않습니다.
+- 서버 SSH 비밀번호는 웹페이지에 저장하지 않습니다.
+- Admin Key는 사용자가 직접 입력하며 브라우저 localStorage에만 저장됩니다.
+- 현재 DB는 SQLite이므로 Render 무료 인스턴스 재배포/재시작 시 데이터가 유지되지 않을 수 있습니다.
