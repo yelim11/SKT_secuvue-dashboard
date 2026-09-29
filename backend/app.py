@@ -10,7 +10,8 @@ from pathlib import Path
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 
-BASE_DIR = Path(__file__).resolve().parent\nPROJECT_DIR = BASE_DIR.parent
+BASE_DIR = Path(__file__).resolve().parent
+PROJECT_DIR = BASE_DIR.parent
 DB_PATH = Path(os.getenv("SECUVUE_DB_PATH", BASE_DIR / "secuvue.db"))
 AGENT_API_KEY = os.getenv("AGENT_API_KEY", "")
 ADMIN_API_KEY = os.getenv("ADMIN_API_KEY", "")
